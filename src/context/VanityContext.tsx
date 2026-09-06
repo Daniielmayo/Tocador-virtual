@@ -20,7 +20,8 @@ import {
   where,
   onSnapshot 
 } from 'firebase/firestore';
-import { auth, db, googleProvider, handleFirestoreError, OperationType, testFirestoreConnection } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, db, storage, googleProvider, handleFirestoreError, OperationType, testFirestoreConnection } from '../firebase';
 import { Brand, Product, VanityTab } from '../types';
 import { INITIAL_BRANDS, INITIAL_PRODUCTS } from '../data/initialData';
 
@@ -36,6 +37,7 @@ interface VanityContextType {
   loginWithEmail: (email: string, pass: string) => Promise<void>;
   loginWithDefaultUser: () => Promise<void>;
   logout: () => Promise<void>;
+  uploadImage: (file: File, folder: string) => Promise<string | null>;
   
   // Navigation & Views
   currentTab: VanityTab;
@@ -122,18 +124,18 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [brands, setBrands] = useState<Brand[]>(() => {
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_BRANDS_KEY);
-      return saved ? JSON.parse(saved) : INITIAL_BRANDS;
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return INITIAL_BRANDS;
+      return [];
     }
   });
 
   const [products, setProducts] = useState<Product[]>(() => {
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_PRODUCTS_KEY);
-      return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return INITIAL_PRODUCTS;
+      return [];
     }
   });
 
@@ -186,6 +188,8 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           if (!snapshot.empty) {
             const fetchedProducts: Product[] = snapshot.docs.map((doc) => doc.data() as Product);
             setProducts(fetchedProducts);
+          } else {
+            setProducts([]);
           }
         },
         (error) => {
@@ -200,6 +204,8 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           if (!snapshot.empty) {
             const fetchedBrands: Brand[] = snapshot.docs.map((doc) => doc.data() as Brand);
             setBrands(fetchedBrands);
+          } else {
+            setBrands([]);
           }
         },
         (error) => {
@@ -316,9 +322,32 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       // Ignored
     }
     localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_PRODUCTS_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_BRANDS_KEY);
     setUser(null);
     setIsGuest(true);
+    setProducts([]);
+    setBrands([]);
     showToast('Has cerrado sesión');
+  };
+
+  const uploadImage = async (file: File, folder: string): Promise<string | null> => {
+    if (!user) return null;
+    try {
+      // Create a unique filename
+      const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+      // Store in users specific directory
+      const imageRef = ref(storage, `${folder}/${user.uid}/${fileName}`);
+      
+      const snapshot = await uploadBytes(imageRef, file);
+      const downloadUrl = await getDownloadURL(snapshot.ref);
+      
+      return downloadUrl;
+    } catch (e) {
+      console.error('Error uploading image:', e);
+      showToast('Error al subir la imagen. Verifica permisos en Firebase Storage.');
+      return null;
+    }
   };
 
   const activeBrand = brands.find((b) => b.id === selectedBrandId) || brands[0] || null;
@@ -515,6 +544,7 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         loginWithEmail,
         loginWithDefaultUser,
         logout,
+        uploadImage,
         currentTab,
         setCurrentTab,
         selectedProductId,

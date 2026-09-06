@@ -14,6 +14,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const {
     products,
     deleteProduct,
+    updateProduct,
     toggleFavorite,
     setEditingProduct,
     setCurrentTab,
@@ -167,6 +168,38 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               )}
             </div>
           )}
+
+          {/* Selector de Estado */}
+          <div className="p-4 rounded-2xl bg-white border border-[#dac0c5]/25 shadow-sm space-y-3">
+            <span className="text-[12px] font-bold text-[#877176] uppercase tracking-wider">
+              Estado del Producto
+            </span>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: 'nuevo', label: 'Nuevo', icon: 'new_releases' },
+                { id: 'en_uso', label: 'En Uso', icon: 'check_circle' },
+                { id: 'agotado', label: 'Agotado', icon: 'block' }
+              ].map(status => (
+                <button
+                  key={status.id}
+                  onClick={() => {
+                    updateProduct(product.id, { status: status.id as any });
+                    showToast(`Estado cambiado a ${status.label}`);
+                  }}
+                  className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl border text-[11px] font-bold transition-all active:scale-95 ${
+                    product.status === status.id
+                      ? 'bg-[#9c385b] border-[#9c385b] text-white shadow-sm'
+                      : 'bg-[#fff0f1] border-[#dac0c5]/30 text-[#554246] hover:bg-[#ffe9ea]'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[18px]">
+                    {status.icon}
+                  </span>
+                  <span>{status.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Detalles de Compra */}
           <div className="p-4 rounded-2xl bg-white border border-[#dac0c5]/25 shadow-sm space-y-2">

@@ -35,9 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="flex items-center gap-2 cursor-pointer select-none"
           >
             {/* Vanity Icon */}
-            <div className="w-8 h-8 rounded-lg bg-[#261819] flex items-center justify-center text-[#d4a574] shadow-sm">
-              <span className="font-headline font-bold text-[14px] italic">V</span>
-            </div>
+            <img src="/logo.jpeg" alt="Vanity Logo" className="w-8 h-8 rounded-lg object-cover shadow-sm" />
             <div className="flex flex-col">
               <span className="font-headline text-[22px] tracking-tight text-[#9c385b] leading-none">
                 Vanity

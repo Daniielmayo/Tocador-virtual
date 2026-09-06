@@ -13,23 +13,8 @@ export const ProfileView: React.FC = () => {
     showToast,
   } = useVanity();
 
-  const [emailInput, setEmailInput] = useState('yulitzahernandezherrera@gmail.com');
-  const [passInput, setPassInput] = useState('Yulisa123*');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const totalProducts = products.length;
   const favoriteCount = products.filter((p) => p.isFavorite).length;
-
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!emailInput || !passInput) {
-      showToast('Introduce correo y contraseña');
-      return;
-    }
-    setIsSubmitting(true);
-    await loginWithEmail(emailInput, passInput);
-    setIsSubmitting(false);
-  };
 
   const handleExportData = () => {
     const backup = {
@@ -106,7 +91,7 @@ export const ProfileView: React.FC = () => {
           </div>
         </div>
 
-        {user ? (
+        {user && (
           <div className="pt-3 flex items-center justify-between border-t border-[#dac0c5]/25">
             <span className="text-[12px] text-[#554246] font-medium">
               Sincronización activa con Firebase
@@ -118,74 +103,9 @@ export const ProfileView: React.FC = () => {
               Cerrar Sesión
             </button>
           </div>
-        ) : (
-          <div className="pt-2 border-t border-[#dac0c5]/25">
-            <button
-              onClick={loginWithDefaultUser}
-              className="w-full h-11 rounded-2xl bg-[#9c385b] hover:bg-[#852a4a] text-white font-bold text-[13px] shadow-sm active:scale-95 transition-all"
-            >
-              Iniciar Sesión con Usuario por Defecto
-            </button>
-          </div>
         )}
       </div>
 
-      {/* Formulario de Autenticación con Correo por Defecto */}
-      <div className="p-5 rounded-3xl bg-white border border-[#dac0c5]/30 shadow-sm space-y-3.5">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#9c385b] text-[22px]">
-            lock
-          </span>
-          <h3 className="font-headline text-[18px] font-semibold text-[#261819]">
-            Autenticación Firebase
-          </h3>
-        </div>
-
-        <p className="text-[12.5px] text-[#554246]">
-          Credenciales de tu cuenta de Firebase asignada por defecto:
-        </p>
-
-        <form onSubmit={handleEmailLogin} className="space-y-3 pt-1">
-          <div className="space-y-1">
-            <label className="text-[11.5px] font-bold text-[#261819] uppercase">
-              Correo Electrónico
-            </label>
-            <div className="h-11 px-3.5 rounded-2xl bg-[#fff0f1] border border-[#dac0c5]/30 flex items-center">
-              <input
-                type="email"
-                value={emailInput}
-                onChange={(e) => setEmailInput(e.target.value)}
-                className="w-full bg-transparent text-[13px] text-[#261819] font-medium outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[11.5px] font-bold text-[#261819] uppercase">
-              Contraseña
-            </label>
-            <div className="h-11 px-3.5 rounded-2xl bg-[#fff0f1] border border-[#dac0c5]/30 flex items-center">
-              <input
-                type="password"
-                value={passInput}
-                onChange={(e) => setPassInput(e.target.value)}
-                className="w-full bg-transparent text-[13px] text-[#261819] font-medium outline-none"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full h-12 rounded-2xl bg-[#8e4a53] hover:bg-[#793942] text-white font-bold text-[14px] flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all"
-          >
-            <span className="material-symbols-outlined text-[18px]">vpn_key</span>
-            <span>
-              {isSubmitting ? 'Conectando...' : 'Autenticar en Firebase'}
-            </span>
-          </button>
-        </form>
-      </div>
 
       {/* Resumen de tu Colección */}
       <div className="space-y-2">

@@ -10,9 +10,11 @@ export const LoginView: React.FC = () => {
       <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-[0_10px_30px_rgba(61,44,46,0.08)] border border-[#dac0c5]/30 flex flex-col items-center space-y-6">
         {/* Logo e Identidad Visual */}
         <div className="flex flex-col items-center space-y-2 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-[#261819] flex items-center justify-center text-[#d4a574] shadow-md ring-4 ring-[#fee1e4]">
-            <span className="font-headline font-bold text-[28px] italic">V</span>
-          </div>
+          <img 
+            src="/logo.jpeg" 
+            alt="Vanity Logo" 
+            className="w-16 h-16 rounded-2xl object-cover shadow-md ring-4 ring-[#fee1e4]"
+          />
 
           <div className="flex flex-col items-center pt-1">
             <h1 className="font-headline text-[34px] font-semibold text-[#9c385b] tracking-tight leading-none">

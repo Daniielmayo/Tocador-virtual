@@ -12,9 +12,14 @@ export const AddProductView: React.FC = () => {
     setCurrentTab,
     addBrand,
     showToast,
+    uploadImage,
   } = useVanity();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Image states
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Form states
   const [selectedBrand, setSelectedBrand] = useState<string>(
@@ -66,11 +71,13 @@ export const AddProductView: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setSelectedFile(file); // Store file to upload later
+
     const reader = new FileReader();
     reader.onload = (event) => {
       if (event.target?.result) {
-        setImageUrl(event.target.result as string);
-        showToast('Imagen cargada correctamente');
+        setImageUrl(event.target.result as string); // Preview immediately
+        showToast('Imagen seleccionada. Se subirá al guardar.');
       }
     };
     reader.readAsDataURL(file);
@@ -106,6 +113,21 @@ export const AddProductView: React.FC = () => {
       return;
     }
 
+    setIsSaving(true);
+    let finalImageUrl = imageUrl;
+
+    // Upload to Firebase Storage if a new file was selected
+    if (selectedFile) {
+      showToast('Subiendo imagen...');
+      const uploadedUrl = await uploadImage(selectedFile, 'products');
+      if (uploadedUrl) {
+        finalImageUrl = uploadedUrl;
+      } else {
+        // If upload fails, keep the fallback/previous URL
+        showToast('Falló la subida. Usando imagen anterior.');
+      }
+    }
+
     if (editingProduct) {
       await updateProduct(editingProduct.id, {
         name: productName.trim(),
@@ -114,7 +136,7 @@ export const AddProductView: React.FC = () => {
         category,
         shadeName: shadeName.trim(),
         shadeColor: shadeColor.trim(),
-        imageUrl,
+        imageUrl: finalImageUrl,
         purchasePrice: purchasePrice.trim(),
         store: store.trim(),
       });
@@ -128,13 +150,14 @@ export const AddProductView: React.FC = () => {
         subCategory: category.charAt(0).toUpperCase() + category.slice(1),
         shadeName: shadeName.trim(),
         shadeColor: shadeColor.trim(),
-        imageUrl,
+        imageUrl: finalImageUrl,
         purchasePrice: purchasePrice.trim(),
         store: store.trim(),
         isFavorite: false,
       });
     }
 
+    setIsSaving(false);
     setCurrentTab('tocador');
   };
 
@@ -454,19 +477,23 @@ export const AddProductView: React.FC = () => {
       </div>
 
       {/* Botones Guardar / Cancelar */}
-      <div className="pt-2 space-y-2.5">
+      <div className="pt-2 space-y-2.5 mb-8">
         <button
-          type="button"
           onClick={handleSave}
-          className="w-full h-13 rounded-2xl bg-[#8e4a53] hover:bg-[#793942] text-white font-bold text-[15px] flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all"
+          disabled={isSaving}
+          className="w-full h-13 rounded-2xl bg-[#8e4a53] hover:bg-[#793942] text-white font-bold text-[15px] flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all disabled:opacity-75 disabled:active:scale-100"
         >
-          <span
-            className="material-symbols-outlined text-[20px]"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
-            favorite
-          </span>
-          <span>{editingProduct ? 'Actualizar Producto' : 'Guardar Producto'}</span>
+          {isSaving ? (
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          ) : (
+            <span
+              className="material-symbols-outlined text-[20px]"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+            >
+              favorite
+            </span>
+          )}
+          <span>{isSaving ? 'Guardando...' : (editingProduct ? 'Actualizar Producto' : 'Guardar Producto')}</span>
         </button>
 
         <button
