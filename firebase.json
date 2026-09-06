@@ -1,0 +1,8 @@
+{
+  "firestore": {
+    "databaseId": "ai-studio-vanitymitocador-ee3460f4-1ada-4e3e-a2f2-6c60390965c0",
+    "rules": "firestore.rules",
+    "edition": "ENTERPRISE",
+    "dataAccessMode": "FIRESTORE_NATIVE"
+  }
+}

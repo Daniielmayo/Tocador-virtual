@@ -1,0 +1,231 @@
+{
+  "entities": {
+    "Brand": {
+      "title": "Brand",
+      "description": "Cosmetics brand cataloged in the user vanity",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for brand"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner user ID"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Brand title"
+        },
+        "creator": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Founder or creator name"
+        },
+        "quote": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Philosophy or slogan"
+        },
+        "logoUrl": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Logo insignia image URL"
+        },
+        "bannerUrl": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Editorial banner image URL"
+        },
+        "specialty": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Primary specialty tag"
+        },
+        "isActiveCollection": {
+          "type": "boolean",
+          "description": "Whether this is the featured active collection"
+        },
+        "productCount": {
+          "type": "number",
+          "description": "Cached count of products"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp or server timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp or server timestamp"
+        }
+      },
+      "required": ["id", "userId", "name"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Cosmetic product in the user vanity",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for product"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner user ID"
+        },
+        "brandId": {
+          "type": "string",
+          "description": "Associated brand identifier"
+        },
+        "brandName": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Brand name"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Product name"
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Category like Rubor, Labial, Base, etc."
+        },
+        "subCategory": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Specific subcategory like Colorete Líquido"
+        },
+        "shadeName": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Shade name or code"
+        },
+        "shadeColor": {
+          "type": "string",
+          "maxLength": 20,
+          "description": "Hex color code for shade swatch"
+        },
+        "shadeDescription": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Shade description"
+        },
+        "finish": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Finish: Dewy, Matte, Glow, Shimmer, Lash, Gloss"
+        },
+        "reference": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Batch code or reference"
+        },
+        "imageUrl": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Product photograph URL"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["en_uso", "nuevo", "agotado", "por_reponer"],
+          "description": "Usage status"
+        },
+        "size": {
+          "type": "string",
+          "maxLength": 40,
+          "description": "Volume or weight, e.g. 3.2 ml, 7.0 g"
+        },
+        "isFavorite": {
+          "type": "boolean",
+          "description": "Marked as favorite"
+        },
+        "isViralFavorite": {
+          "type": "boolean",
+          "description": "Badge for viral sensation"
+        },
+        "paoMonths": {
+          "type": "number",
+          "description": "Period after opening in months"
+        },
+        "purchaseDate": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Purchase date string"
+        },
+        "openedDate": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Opening date string"
+        },
+        "location": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Storage location in vanity"
+        },
+        "personalNotes": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Personal review and application tips"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Update timestamp"
+        }
+      },
+      "required": ["id", "userId", "name", "brandName", "category"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User vanity profile settings",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth user ID"
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Display name"
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 150,
+          "description": "User email"
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Profile picture URL"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Update timestamp"
+        }
+      },
+      "required": ["userId"]
+    }
+  },
+  "firestore": {
+    "/brands/{brandId}": {
+      "schema": "Brand",
+      "description": "Brands registered by users"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Cosmetic items cataloged in user vanity"
+    },
+    "/userProfiles/{userId}": {
+      "schema": "UserProfile",
+      "description": "Profile info for the authenticated user"
+    }
+  }
+}
