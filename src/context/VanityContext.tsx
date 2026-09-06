@@ -239,7 +239,7 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const loginWithEmail = async (email: string, pass: string) => {
     try {
-      // 1. Try Firebase Auth Sign-In
+      // Try Firebase Auth Sign-In
       const res = await signInWithEmailAndPassword(auth, email, pass);
       setUser(res.user);
       setIsGuest(false);
@@ -255,54 +255,8 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       setSelectedProductId(null);
       showToast('Sesión iniciada con éxito');
     } catch (err: any) {
-      console.warn('Firebase Sign-In note, attempting account creation/fallback:', err?.code || err);
-      try {
-        // 2. Try Firebase Auth Account Creation
-        const res = await createUserWithEmailAndPassword(auth, email, pass);
-        if (res.user) {
-          await updateProfile(res.user, {
-            displayName: email.toLowerCase().includes('yulitza') ? DEFAULT_NAME : email.split('@')[0],
-          });
-        }
-        setUser(res.user);
-        setIsGuest(false);
-        localStorage.setItem(
-          LOCAL_STORAGE_USER_KEY,
-          JSON.stringify({
-            uid: res.user.uid,
-            email: res.user.email,
-            displayName: res.user.displayName || DEFAULT_NAME,
-          })
-        );
-        setCurrentTab('tocador');
-        setSelectedProductId(null);
-        showToast('Cuenta de Firebase autenticada');
-      } catch (createErr: any) {
-        console.warn('Firebase Cloud auth note, creating local session:', createErr?.code || createErr);
-        // 3. Fallback: Local User Session (Never blocks the user)
-        const fallbackUser = {
-          uid: 'user-' + Date.now(),
-          email: email,
-          displayName: email.toLowerCase().includes('yulitza') ? DEFAULT_NAME : email.split('@')[0],
-          photoURL:
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuBqmhkchV3JUBDu8vFUodavOCCVHNymhhfU4aSG3QQOGXjE-8mwTcs8z0FOccTE4eeiyeBvRhqYigj5E8vMWMkOMhjUfeO12nEBW_Mh3FLufFy3_1idNvAmgowIiXULR73udPHz9dn3mpqGwfTJrQiLHqGgAWJc7HxbEMViD2g6mrnTj83s56T2cn7vEdADLuBLmIo-1rJgrAaXaM6J6ggw6Zu6d1bpA7cxfacYsbcM3b8lFCAeGzVrYA',
-        } as unknown as User;
-
-        setUser(fallbackUser);
-        setIsGuest(false);
-        localStorage.setItem(
-          LOCAL_STORAGE_USER_KEY,
-          JSON.stringify({
-            uid: fallbackUser.uid,
-            email: fallbackUser.email,
-            displayName: fallbackUser.displayName,
-            photoURL: fallbackUser.photoURL,
-          })
-        );
-        setCurrentTab('tocador');
-        setSelectedProductId(null);
-        showToast('¡Bienvenida a tu Tocador!');
-      }
+      console.error('Login error:', err);
+      showToast('Error: Correo o contraseña incorrectos');
     }
   };
 
