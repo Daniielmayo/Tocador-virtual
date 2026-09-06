@@ -6,6 +6,7 @@ export const LoginView: React.FC = () => {
 
   const [email, setEmail] = useState('yulitzahernandezherrera@gmail.com');
   const [password, setPassword] = useState('Yulisa123*');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,13 +80,22 @@ export const LoginView: React.FC = () => {
             </label>
             <div className="h-12 px-3.5 rounded-2xl bg-[#fff0f1] border border-[#dac0c5]/35 flex items-center transition-all focus-within:border-[#9c385b] focus-within:bg-white">
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="w-full bg-transparent text-[14px] text-[#261819] font-medium outline-none placeholder:text-[#877176]/60"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="ml-2 text-[#877176] hover:text-[#9c385b] transition-colors focus:outline-none flex items-center"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  {showPassword ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
             </div>
           </div>
 
