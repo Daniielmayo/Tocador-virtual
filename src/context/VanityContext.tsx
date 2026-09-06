@@ -300,8 +300,7 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       setSelectedProductId(null);
     } catch (err) {
       console.error('Google Sign-In Error:', err);
-      showToast('Intentando ingresar con usuario por defecto');
-      await loginWithEmail(DEFAULT_EMAIL, DEFAULT_PASS);
+      showToast('Error al iniciar sesión con Google');
     }
   };
 
