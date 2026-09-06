@@ -256,6 +256,35 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       showToast('Sesión iniciada con éxito');
     } catch (err: any) {
       console.error('Login error:', err);
+      
+      // Auto-registro SOLAMENTE para el correo por defecto
+      if (email.toLowerCase() === DEFAULT_EMAIL.toLowerCase()) {
+        try {
+          const res = await createUserWithEmailAndPassword(auth, email, pass);
+          if (res.user) {
+            await updateProfile(res.user, {
+              displayName: DEFAULT_NAME,
+            });
+          }
+          setUser(res.user);
+          setIsGuest(false);
+          localStorage.setItem(
+            LOCAL_STORAGE_USER_KEY,
+            JSON.stringify({
+              uid: res.user.uid,
+              email: res.user.email,
+              displayName: res.user.displayName || DEFAULT_NAME,
+            })
+          );
+          setCurrentTab('tocador');
+          setSelectedProductId(null);
+          showToast('Sesión iniciada con éxito (Cuenta nueva)');
+          return;
+        } catch (createErr) {
+          console.error('Error al crear la cuenta principal:', createErr);
+        }
+      }
+
       showToast('Error: Correo o contraseña incorrectos');
     }
   };
