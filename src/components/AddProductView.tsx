@@ -498,11 +498,14 @@ export const AddProductView: React.FC = () => {
         <div className="space-y-3">
           <div className="h-12 px-3.5 rounded-2xl bg-[#fff0f1] border border-[#dac0c5]/25 flex items-center">
             <span className="material-symbols-outlined text-[18px] text-[#877176] mr-2">sell</span>
+            <span className="text-[12px] font-bold text-[#877176] mr-1">COP</span>
             <input
+              type="number"
+              inputMode="numeric"
               value={purchasePrice}
               onChange={(e) => setPurchasePrice(e.target.value)}
-              placeholder="Último precio de compra (Ej. $45.000)"
-              className="w-full bg-transparent text-[14px] text-[#261819] font-medium outline-none"
+              placeholder="45000"
+              className="w-full bg-transparent text-[14px] text-[#261819] font-medium outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
           </div>
 

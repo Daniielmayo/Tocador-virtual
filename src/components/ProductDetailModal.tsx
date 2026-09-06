@@ -256,7 +256,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <div className="flex items-center gap-2 text-[#261819]">
                 <span className="material-symbols-outlined text-[16px] text-[#9c385b]">sell</span>
                 <span className={`text-[14px] ${product.purchasePrice ? 'font-medium' : 'text-[#877176] italic'}`}>
-                  {product.purchasePrice || 'Precio no especificado'}
+                  {product.purchasePrice
+                    ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Number(product.purchasePrice))
+                    : 'Precio no especificado'}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-[#261819]">
