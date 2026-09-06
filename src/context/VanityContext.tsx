@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { 
   User, 
   signInWithPopup, 
+  signInWithRedirect,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
@@ -295,9 +296,9 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const loginWithGoogle = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
-      setCurrentTab('tocador');
-      setSelectedProductId(null);
+      await signInWithRedirect(auth, googleProvider);
+      // The redirect will navigate away, so code below here won't run.
+      // Firebase Auth's onAuthStateChanged will handle the login on the returning page reload.
     } catch (err) {
       console.error('Google Sign-In Error:', err);
       showToast('Error al iniciar sesión con Google');
