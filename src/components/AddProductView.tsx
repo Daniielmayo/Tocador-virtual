@@ -500,12 +500,15 @@ export const AddProductView: React.FC = () => {
             <span className="material-symbols-outlined text-[18px] text-[#877176] mr-2">sell</span>
             <span className="text-[12px] font-bold text-[#877176] mr-1">COP</span>
             <input
-              type="number"
+              type="text"
               inputMode="numeric"
-              value={purchasePrice}
-              onChange={(e) => setPurchasePrice(e.target.value)}
-              placeholder="45000"
-              className="w-full bg-transparent text-[14px] text-[#261819] font-medium outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              value={purchasePrice ? new Intl.NumberFormat('es-CO').format(Number(purchasePrice)) : ''}
+              onChange={(e) => {
+                const rawValue = e.target.value.replace(/\D/g, '');
+                setPurchasePrice(rawValue);
+              }}
+              placeholder="45.000"
+              className="w-full bg-transparent text-[14px] text-[#261819] font-medium outline-none"
             />
           </div>
 
