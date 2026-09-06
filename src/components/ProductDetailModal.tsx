@@ -201,12 +201,58 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             </div>
           </div>
 
+          {/* Contador de Días con el Producto */}
+          {product.purchaseDate && (
+            <div className="p-4 rounded-2xl bg-white border border-[#dac0c5]/25 shadow-sm space-y-2">
+              <span className="text-[12px] font-bold text-[#877176] uppercase tracking-wider">
+                Tiempo con el Producto
+              </span>
+              <div className="flex items-center gap-3 pt-1">
+                <div className="w-12 h-12 rounded-xl bg-[#fee1e4] flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[24px] text-[#9c385b]">timer</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-headline text-[22px] font-bold text-[#261819] leading-tight">
+                    {(() => {
+                      const start = new Date(product.purchaseDate);
+                      const end = product.finishedDate ? new Date(product.finishedDate) : new Date();
+                      const diffMs = end.getTime() - start.getTime();
+                      const days = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+                      return days;
+                    })()} días
+                  </span>
+                  <span className="text-[12px] text-[#554246]">
+                    {product.status === 'agotado' && product.finishedDate
+                      ? `Duró desde ${new Date(product.purchaseDate).toLocaleDateString('es-CO')} hasta ${new Date(product.finishedDate).toLocaleDateString('es-CO')}`
+                      : `Desde ${new Date(product.purchaseDate).toLocaleDateString('es-CO')}`}
+                  </span>
+                </div>
+              </div>
+              {product.status === 'agotado' && product.finishedDate && (
+                <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-xl bg-[#fff0f1] border border-[#dac0c5]/30">
+                  <span className="material-symbols-outlined text-[16px] text-[#ba1a1a]">event_busy</span>
+                  <span className="text-[13px] text-[#554246] font-medium">
+                    Se agotó el {new Date(product.finishedDate).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Detalles de Compra */}
           <div className="p-4 rounded-2xl bg-white border border-[#dac0c5]/25 shadow-sm space-y-2">
             <span className="text-[12px] font-bold text-[#877176] uppercase tracking-wider">
               Detalles de Compra
             </span>
             <div className="flex flex-col gap-1.5 pt-1">
+              {product.purchaseDate && (
+                <div className="flex items-center gap-2 text-[#261819]">
+                  <span className="material-symbols-outlined text-[16px] text-[#9c385b]">calendar_today</span>
+                  <span className="text-[14px] font-medium">
+                    {new Date(product.purchaseDate).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-2 text-[#261819]">
                 <span className="material-symbols-outlined text-[16px] text-[#9c385b]">sell</span>
                 <span className={`text-[14px] ${product.purchasePrice ? 'font-medium' : 'text-[#877176] italic'}`}>

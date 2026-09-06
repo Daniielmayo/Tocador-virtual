@@ -81,9 +81,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
           {product.name}
         </h3>
 
-        <div className="flex items-center justify-between pt-1">
-          {/* Swatch & Tono / Código */}
-          {product.shadeName || product.shadeColor ? (
+        <div className="flex flex-col gap-1 pt-1">
+          {/* Swatch & Tono / Código (si existe) */}
+          {(product.shadeName || product.shadeColor) && (
             <div className="flex items-center space-x-1.5 bg-[#fee1e4]/50 px-2 py-0.5 rounded-full max-w-[130px]">
               {product.shadeColor && (
                 <span
@@ -95,12 +95,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
                 {product.shadeName || product.shadeColor}
               </span>
             </div>
-          ) : (
-            <span className="text-[11px] text-[#554246] font-medium capitalize">
-              {product.category}
-            </span>
           )}
 
+          {/* Categoría siempre visible */}
           <span className="text-[10.5px] text-[#9c385b] font-bold uppercase tracking-wider">
             {product.category}
           </span>

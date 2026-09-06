@@ -33,6 +33,7 @@ export interface Product {
   otherShades?: ShadeSwatch[];
   purchasePrice?: string;
   store?: string;
+  finishedDate?: string;
   createdAt: string;
   updatedAt: string;
 }

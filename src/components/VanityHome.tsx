@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useVanity } from '../context/VanityContext';
 import { COSMETIC_CATEGORIES } from '../data/initialData';
@@ -23,6 +23,7 @@ export const VanityHome: React.FC = () => {
     setSelectedProductId,
     setIsDailyRoutineOpen,
     showToast,
+    categories,
   } = useVanity();
 
   const [showBrandDropdown, setShowBrandDropdown] = useState(false);
@@ -132,7 +133,19 @@ export const VanityHome: React.FC = () => {
       {/* Categorías: Carrusel Horizontal Interactivo */}
       <section className="w-full -mx-4 px-4 overflow-x-auto no-scrollbar scroll-smooth">
         <div className="flex items-center space-x-2 py-1 min-w-max">
-          {COSMETIC_CATEGORIES.map((cat) => {
+          {/* Merge static categories with user-created dynamic ones */}
+          {(() => {
+            const staticIds = COSMETIC_CATEGORIES.map((c) => c.id);
+            const dynamicCats = categories
+              .filter((cat) => !staticIds.includes(cat))
+              .map((cat) => ({
+                id: cat,
+                label: cat.charAt(0).toUpperCase() + cat.slice(1),
+                icon: 'category',
+              }));
+            const allCats = [...COSMETIC_CATEGORIES, ...dynamicCats];
+            return allCats;
+          })().map((cat) => {
             const isActive = categoryFilter === cat.id;
             const count =
               cat.id === 'all'

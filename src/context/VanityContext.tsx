@@ -59,6 +59,7 @@ interface VanityContextType {
   brands: Brand[];
   products: Product[];
   activeBrand: Brand | null;
+  categories: string[];
   
   // CRUD
   addProduct: (newProd: Partial<Product>) => Promise<Product>;
@@ -67,6 +68,7 @@ interface VanityContextType {
   toggleFavorite: (id: string) => Promise<void>;
   addBrand: (newBrand: Partial<Brand>) => Promise<Brand>;
   updateBrand: (id: string, updates: Partial<Brand>) => Promise<void>;
+  addCategory: (name: string) => Promise<void>;
   
   // Filters & Search
   searchQuery: string;
@@ -89,6 +91,11 @@ const VanityContext = createContext<VanityContextType | undefined>(undefined);
 
 const LOCAL_STORAGE_PRODUCTS_KEY = 'vanity_products_v1';
 const LOCAL_STORAGE_BRANDS_KEY = 'vanity_brands_v1';
+const LOCAL_STORAGE_CATEGORIES_KEY = 'vanity_categories_v1';
+
+const DEFAULT_CATEGORIES = [
+  'rubor', 'base', 'labial', 'pestanas', 'sombras', 'polvos', 'iluminador',
+];
 
 export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -109,6 +116,16 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [brandFilter, setBrandFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+
+  // Categories
+  const [categories, setCategories] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_CATEGORIES_KEY);
+      return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
+    } catch {
+      return DEFAULT_CATEGORIES;
+    }
+  });
 
   // Toast
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
@@ -155,6 +172,14 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       console.error('LocalStorage write error', e);
     }
   }, [products]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_CATEGORIES_KEY, JSON.stringify(categories));
+    } catch (e) {
+      console.error('LocalStorage write error', e);
+    }
+  }, [categories]);
 
   // Boot connection test
   useEffect(() => {
@@ -213,9 +238,27 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         }
       );
 
+      // Sync Categories
+      const qCategories = query(collection(db, 'categories'), where('userId', '==', userId));
+      const unsubscribeCategories = onSnapshot(
+        qCategories,
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const fetchedCats: string[] = snapshot.docs.map((doc) => doc.data().name as string);
+            // Merge with defaults to ensure we always have the base set
+            const merged = Array.from(new Set([...DEFAULT_CATEGORIES, ...fetchedCats]));
+            setCategories(merged);
+          }
+        },
+        (error) => {
+          console.warn('Firestore categories sync warning:', error);
+        }
+      );
+
       return () => {
         unsubscribeProducts();
         unsubscribeBrands();
+        unsubscribeCategories();
       };
     } catch (e) {
       console.warn('Error setting up Firestore listener:', e);
@@ -324,29 +367,44 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
     localStorage.removeItem(LOCAL_STORAGE_PRODUCTS_KEY);
     localStorage.removeItem(LOCAL_STORAGE_BRANDS_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_CATEGORIES_KEY);
     setUser(null);
     setIsGuest(true);
     setProducts([]);
     setBrands([]);
+    setCategories(DEFAULT_CATEGORIES);
     showToast('Has cerrado sesión');
   };
 
   const uploadImage = async (file: File, folder: string): Promise<string | null> => {
-    if (!user) return null;
     try {
-      // Create a unique filename
-      const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-      // Store in users specific directory
-      const imageRef = ref(storage, `${folder}/${user.uid}/${fileName}`);
-      
-      const snapshot = await uploadBytes(imageRef, file);
-      const downloadUrl = await getDownloadURL(snapshot.ref);
-      
-      return downloadUrl;
-    } catch (e) {
-      console.error('Error uploading image:', e);
-      showToast('Error al subir la imagen. Verifica permisos en Firebase Storage.');
-      return null;
+      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+      const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+      if (!cloudName || !uploadPreset) {
+        throw new Error('Cloudinary no está configurado en las variables de entorno.');
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', uploadPreset);
+      formData.append('folder', `vanity/${folder}`);
+
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Error al subir la imagen a Cloudinary');
+      }
+
+      const data = await response.json();
+      return data.secure_url;
+    } catch (e: any) {
+      console.error('Error uploading image to Cloudinary:', e);
+      throw new Error(e.message || 'Error al subir la imagen a Cloudinary.');
     }
   };
 
@@ -415,14 +473,26 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   };
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
+    // Auto-set finishedDate when status changes to agotado
+    const finalUpdates = { ...updates };
+    if (updates.status === 'agotado') {
+      const existingProduct = products.find((p) => p.id === id);
+      if (existingProduct && existingProduct.status !== 'agotado') {
+        finalUpdates.finishedDate = new Date().toISOString().split('T')[0];
+      }
+    } else if (updates.status) {
+      // Clear finishedDate if switching away from agotado
+      finalUpdates.finishedDate = '';
+    }
+
     setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p))
+      prev.map((p) => (p.id === id ? { ...p, ...finalUpdates, updatedAt: new Date().toISOString() } : p))
     );
 
     if (user) {
       try {
         await updateDoc(doc(db, 'products', id), {
-          ...updates,
+          ...finalUpdates,
           updatedAt: new Date().toISOString(),
         });
       } catch (err) {
@@ -534,6 +604,29 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     showToast('Marca actualizada con éxito');
   };
 
+  const addCategory = async (name: string) => {
+    const catLower = name.trim().toLowerCase();
+    if (!catLower || categories.includes(catLower)) return;
+
+    setCategories((prev) => [...prev, catLower]);
+
+    if (user) {
+      try {
+        const catId = `cat-${Date.now()}`;
+        await setDoc(doc(db, 'categories', catId), {
+          id: catId,
+          userId: user.uid,
+          name: catLower,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.CREATE, `categories/${catLower}`);
+      }
+    }
+
+    showToast(`Categoría "${catLower}" agregada`);
+  };
+
   return (
     <VanityContext.Provider
       value={{
@@ -560,11 +653,13 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         brands,
         products,
         activeBrand,
+        categories,
         addProduct,
         updateProduct,
         deleteProduct,
         toggleFavorite,
         addBrand,
+        addCategory,
         updateBrand,
         searchQuery,
         setSearchQuery,

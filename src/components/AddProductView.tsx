@@ -11,6 +11,8 @@ export const AddProductView: React.FC = () => {
     setEditingProduct,
     setCurrentTab,
     addBrand,
+    addCategory,
+    categories,
     showToast,
     uploadImage,
   } = useVanity();
@@ -34,20 +36,11 @@ export const AddProductView: React.FC = () => {
   const [category, setCategory] = useState<string>(
     editingProduct?.category || 'rubor'
   );
-  const [categoriesList, setCategoriesList] = useState<string[]>([
-    'rubor',
-    'base',
-    'labial',
-    'pestanas',
-    'sombras',
-    'polvos',
-    'iluminador',
-  ]);
   const [shadeName, setShadeName] = useState<string>(
     editingProduct?.shadeName || ''
   );
   const [shadeColor, setShadeColor] = useState<string>(
-    editingProduct?.shadeColor || '#E58C96'
+    editingProduct?.shadeColor || ''
   );
   const [imageUrl, setImageUrl] = useState<string>(
     editingProduct?.imageUrl ||
@@ -59,12 +52,18 @@ export const AddProductView: React.FC = () => {
   const [store, setStore] = useState<string>(
     editingProduct?.store || ''
   );
+  const [purchaseDate, setPurchaseDate] = useState<string>(
+    editingProduct?.purchaseDate || new Date().toISOString().split('T')[0]
+  );
 
   // Inline creation states
   const [showAddBrandInput, setShowAddBrandInput] = useState(false);
   const [newBrandInput, setNewBrandInput] = useState('');
   const [showAddCategoryInput, setShowAddCategoryInput] = useState(false);
   const [newCategoryInput, setNewCategoryInput] = useState('');
+  const [shadeEnabled, setShadeEnabled] = useState(
+    editingProduct ? !!(editingProduct.shadeName || editingProduct.shadeColor) : true
+  );
 
   // Handle image upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,17 +92,14 @@ export const AddProductView: React.FC = () => {
     setShowAddBrandInput(false);
   };
 
-  // Add new Category dynamically
+  // Add new Category dynamically (saved to Firebase via context)
   const handleCreateCategory = () => {
     if (!newCategoryInput.trim()) return;
     const catLower = newCategoryInput.trim().toLowerCase();
-    if (!categoriesList.includes(catLower)) {
-      setCategoriesList([...categoriesList, catLower]);
-    }
+    addCategory(catLower);
     setCategory(catLower);
     setNewCategoryInput('');
     setShowAddCategoryInput(false);
-    showToast(`Categoría "${catLower}" agregada`);
   };
 
   // Save product
@@ -116,49 +112,57 @@ export const AddProductView: React.FC = () => {
     setIsSaving(true);
     let finalImageUrl = imageUrl;
 
-    // Upload to Firebase Storage if a new file was selected
-    if (selectedFile) {
-      showToast('Subiendo imagen...');
-      const uploadedUrl = await uploadImage(selectedFile, 'products');
-      if (uploadedUrl) {
-        finalImageUrl = uploadedUrl;
-      } else {
-        // If upload fails, keep the fallback/previous URL
-        showToast('Falló la subida. Usando imagen anterior.');
+    try {
+      // Upload to Firebase Storage if a new file was selected
+      if (selectedFile) {
+        showToast('Subiendo imagen...');
+        const uploadedUrl = await uploadImage(selectedFile, 'products');
+        if (uploadedUrl) {
+          finalImageUrl = uploadedUrl;
+        } else {
+          // If upload fails, keep the fallback/previous URL
+          showToast('Falló la subida. Usando imagen anterior.');
+        }
       }
-    }
 
-    if (editingProduct) {
-      await updateProduct(editingProduct.id, {
-        name: productName.trim(),
-        brandName: selectedBrand,
-        reference: reference.trim(),
-        category,
-        shadeName: shadeName.trim(),
-        shadeColor: shadeColor.trim(),
-        imageUrl: finalImageUrl,
-        purchasePrice: purchasePrice.trim(),
-        store: store.trim(),
-      });
-      setEditingProduct(null);
-    } else {
-      await addProduct({
-        name: productName.trim(),
-        brandName: selectedBrand,
-        reference: reference.trim(),
-        category,
-        subCategory: category.charAt(0).toUpperCase() + category.slice(1),
-        shadeName: shadeName.trim(),
-        shadeColor: shadeColor.trim(),
-        imageUrl: finalImageUrl,
-        purchasePrice: purchasePrice.trim(),
-        store: store.trim(),
-        isFavorite: false,
-      });
-    }
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, {
+          name: productName.trim(),
+          brandName: selectedBrand,
+          reference: reference.trim(),
+          category,
+          shadeName: shadeEnabled ? shadeName.trim() : '',
+          shadeColor: shadeEnabled ? shadeColor.trim() : '',
+          imageUrl: finalImageUrl,
+          purchasePrice: purchasePrice.trim(),
+          store: store.trim(),
+          purchaseDate,
+        });
+        setEditingProduct(null);
+      } else {
+        await addProduct({
+          name: productName.trim(),
+          brandName: selectedBrand,
+          reference: reference.trim(),
+          category,
+          subCategory: category.charAt(0).toUpperCase() + category.slice(1),
+          shadeName: shadeEnabled ? shadeName.trim() : '',
+          shadeColor: shadeEnabled ? shadeColor.trim() : '',
+          imageUrl: finalImageUrl,
+          purchasePrice: purchasePrice.trim(),
+          store: store.trim(),
+          purchaseDate,
+          isFavorite: false,
+        });
+      }
 
-    setIsSaving(false);
-    setCurrentTab('tocador');
+      setCurrentTab('tocador');
+    } catch (error: any) {
+      console.error('Error saving product:', error);
+      showToast('Ocurrió un error al guardar el producto');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -340,7 +344,7 @@ export const AddProductView: React.FC = () => {
 
         {/* Grid de Selección de Categoría */}
         <div className="flex flex-wrap gap-2">
-          {categoriesList.map((cat) => {
+          {categories.map((cat) => {
             const isSelected = category.toLowerCase() === cat.toLowerCase();
             return (
               <button
@@ -364,90 +368,128 @@ export const AddProductView: React.FC = () => {
       <div className="p-4 rounded-3xl bg-white border border-[#dac0c5]/30 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <label className="text-[13px] font-bold text-[#261819]">
-            Tono / Número / Color (Opcional)
+            Tono / Número / Color
           </label>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#fff0f1]">
+          {/* Switch Toggle */}
+          <button
+            type="button"
+            onClick={() => setShadeEnabled(!shadeEnabled)}
+            className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+              shadeEnabled ? 'bg-[#9c385b]' : 'bg-[#dac0c5]'
+            }`}
+          >
             <span
-              className="w-3.5 h-3.5 rounded-full border border-white shadow-sm"
-              style={{ backgroundColor: shadeColor }}
-            ></span>
-            <span className="text-[11px] font-bold text-[#261819]">
-              {shadeColor}
-            </span>
-          </div>
+              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-200 ${
+                shadeEnabled ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
         </div>
 
-        {/* Input para Tono o Número */}
-        <div className="h-12 px-3.5 rounded-2xl bg-[#fff0f1] border border-[#dac0c5]/25 flex items-center">
-          <input
-            value={shadeName}
-            onChange={(e) => setShadeName(e.target.value)}
-            placeholder="Ej. #140, 01, Happy, Fair 3 (número o nombre)"
-            className="w-full bg-transparent text-[14px] text-[#261819] font-medium outline-none"
-          />
-        </div>
+        {shadeEnabled && (
+          <>
+            {/* Color preview badge */}
+            {shadeColor && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#fff0f1] w-fit">
+                <span
+                  className="w-3.5 h-3.5 rounded-full border border-white shadow-sm"
+                  style={{ backgroundColor: shadeColor }}
+                ></span>
+                <span className="text-[11px] font-bold text-[#261819]">
+                  {shadeColor}
+                </span>
+              </div>
+            )}
 
-        {/* Selección de Color Hexadecimal */}
-        <div className="space-y-2 pt-1">
-          <span className="text-[11.5px] text-[#554246] font-medium">
-            Elige un color o ingresa su código Hexadecimal:
-          </span>
-
-          {/* Paleta de Colores Rápidos */}
-          <div className="flex items-center justify-between gap-1 flex-wrap">
-            {PRESET_SHADE_COLORS.map((preset) => {
-              const isSelected = shadeColor.toLowerCase() === preset.hex.toLowerCase();
-              return (
-                <button
-                  key={preset.hex}
-                  type="button"
-                  onClick={() => setShadeColor(preset.hex)}
-                  title={preset.name}
-                  className={`w-9 h-9 rounded-full transition-transform active:scale-90 border-2 ${
-                    isSelected
-                      ? 'border-[#9c385b] scale-110 shadow-md ring-2 ring-[#fda7b0]'
-                      : 'border-white shadow-sm'
-                  }`}
-                  style={{ backgroundColor: preset.hex }}
-                ></button>
-              );
-            })}
-          </div>
-
-          {/* Selector HEX Manual + Color Picker Native */}
-          <div className="grid grid-cols-2 gap-2 pt-2">
-            <div className="h-11 px-3 rounded-2xl bg-[#fff0f1] border border-[#dac0c5]/25 flex items-center gap-2">
-              <span className="text-[11px] font-bold text-[#877176]">HEX</span>
+            {/* Input para Tono o Número */}
+            <div className="h-12 px-3.5 rounded-2xl bg-[#fff0f1] border border-[#dac0c5]/25 flex items-center">
               <input
-                type="text"
-                value={shadeColor}
-                onChange={(e) => setShadeColor(e.target.value)}
-                placeholder="#E58C96"
-                className="w-full bg-transparent text-[12px] font-bold text-[#261819] outline-none"
+                value={shadeName}
+                onChange={(e) => setShadeName(e.target.value)}
+                placeholder="Ej. #140, 01, Happy, Fair 3 (número o nombre)"
+                className="w-full bg-transparent text-[14px] text-[#261819] font-medium outline-none"
               />
             </div>
 
-            <label className="h-11 px-3 rounded-2xl bg-[#fee1e4] hover:bg-[#f8dcde] text-[#261819] text-[12px] font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-sm">
-              <span
-                className="w-4 h-4 rounded-md shadow-sm border border-white"
-                style={{ backgroundColor: shadeColor }}
-              ></span>
-              <span>Paleta de Color</span>
-              <span className="material-symbols-outlined text-[16px] text-[#9c385b]">
-                colorize
+            {/* Selección de Color Hexadecimal */}
+            <div className="space-y-2 pt-1">
+              <span className="text-[11.5px] text-[#554246] font-medium">
+                Elige un color o ingresa su código Hexadecimal:
               </span>
-              <input
-                type="color"
-                value={shadeColor.startsWith('#') ? shadeColor : '#E58C96'}
-                onChange={(e) => setShadeColor(e.target.value)}
-                className="hidden"
-              />
-            </label>
-          </div>
+
+              {/* Paleta de Colores Rápidos */}
+              <div className="flex items-center justify-between gap-1 flex-wrap">
+                {PRESET_SHADE_COLORS.map((preset) => {
+                  const isSelected = shadeColor.toLowerCase() === preset.hex.toLowerCase();
+                  return (
+                    <button
+                      key={preset.hex}
+                      type="button"
+                      onClick={() => setShadeColor(preset.hex)}
+                      title={preset.name}
+                      className={`w-9 h-9 rounded-full transition-transform active:scale-90 border-2 ${
+                        isSelected
+                          ? 'border-[#9c385b] scale-110 shadow-md ring-2 ring-[#fda7b0]'
+                          : 'border-white shadow-sm'
+                      }`}
+                      style={{ backgroundColor: preset.hex }}
+                    ></button>
+                  );
+                })}
+              </div>
+
+              {/* Selector HEX Manual + Color Picker Native */}
+              <div className="grid grid-cols-2 gap-2 pt-2">
+                <div className="h-11 px-3 rounded-2xl bg-[#fff0f1] border border-[#dac0c5]/25 flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-[#877176]">HEX</span>
+                  <input
+                    type="text"
+                    value={shadeColor}
+                    onChange={(e) => setShadeColor(e.target.value)}
+                    placeholder="#E58C96"
+                    className="w-full bg-transparent text-[12px] font-bold text-[#261819] outline-none"
+                  />
+                </div>
+
+                <label className="h-11 px-3 rounded-2xl bg-[#fee1e4] hover:bg-[#f8dcde] text-[#261819] text-[12px] font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-sm">
+                  <span
+                    className="w-4 h-4 rounded-md shadow-sm border border-white"
+                    style={{ backgroundColor: shadeColor || '#E58C96' }}
+                  ></span>
+                  <span>Paleta de Color</span>
+                  <span className="material-symbols-outlined text-[16px] text-[#9c385b]">
+                    colorize
+                  </span>
+                  <input
+                    type="color"
+                    value={shadeColor.startsWith('#') ? shadeColor : '#E58C96'}
+                    onChange={(e) => setShadeColor(e.target.value)}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* 6. Fecha de Compra */}
+      <div className="p-4 rounded-3xl bg-white border border-[#dac0c5]/30 shadow-sm space-y-3">
+        <label className="text-[13px] font-bold text-[#261819]">
+          Fecha de Compra
+        </label>
+        <div className="h-12 px-3.5 rounded-2xl bg-[#fff0f1] border border-[#dac0c5]/25 flex items-center">
+          <span className="material-symbols-outlined text-[18px] text-[#877176] mr-2">calendar_today</span>
+          <input
+            type="date"
+            value={purchaseDate}
+            onChange={(e) => setPurchaseDate(e.target.value)}
+            className="w-full bg-transparent text-[14px] text-[#261819] font-medium outline-none"
+          />
         </div>
       </div>
 
-      {/* 6. Compra (Precio y Tienda) */}
+      {/* 7. Compra (Precio y Tienda) */}
       <div className="p-4 rounded-3xl bg-white border border-[#dac0c5]/30 shadow-sm space-y-3">
         <label className="text-[13px] font-bold text-[#261819]">
           Detalles de Compra (Opcional)
