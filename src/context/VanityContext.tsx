@@ -7,7 +7,7 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
   signOut, 
-  onAuthStateChanged 
+  onAuthStateChanged
 } from 'firebase/auth';
 import { 
   collection, 
@@ -296,12 +296,16 @@ export const VanityProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const loginWithGoogle = async () => {
     try {
-      await signInWithRedirect(auth, googleProvider);
-      // The redirect will navigate away, so code below here won't run.
-      // Firebase Auth's onAuthStateChanged will handle the login on the returning page reload.
-    } catch (err) {
+      await signInWithPopup(auth, googleProvider);
+      setCurrentTab('tocador');
+      setSelectedProductId(null);
+    } catch (err: any) {
       console.error('Google Sign-In Error:', err);
-      showToast('Error al iniciar sesión con Google');
+      if (err.code === 'auth/popup-blocked') {
+        alert('Tu navegador bloqueó la ventana de inicio de sesión. Por favor, permite las ventanas emergentes (popups) para esta página o ábrela en tu navegador principal (Chrome/Safari).');
+      } else {
+        showToast('Error al iniciar sesión con Google');
+      }
     }
   };
 
